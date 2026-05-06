@@ -17,8 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Button } from '@douyinfe/semi-ui';
+import React, { useContext, useEffect, useState } from 'react';
+import {
+  Button,
+  Typography,
+  Input,
+  ScrollList,
+  ScrollItem,
+} from '@douyinfe/semi-ui';
 import { API, showError, copy, showSuccess } from '../../helpers';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
 import { API_ENDPOINTS } from '../../constants/common.constant';
@@ -27,79 +33,37 @@ import { useActualTheme } from '../../context/Theme';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
 import {
-  IconCode,
-  IconFile,
   IconGithubLogo,
-  IconHistogram,
   IconPlay,
-  IconPriceTag,
+  IconFile,
+  IconCopy,
 } from '@douyinfe/semi-icons';
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
 import {
-  AzureAI,
-  Claude,
-  Cohere,
-  DeepSeek,
-  Gemini,
-  Grok,
-  Hunyuan,
-  Midjourney,
-  Minimax,
   Moonshot,
   OpenAI,
-  Qwen,
-  Spark,
-  Volcengine,
-  Wenxin,
   XAI,
-  Xinference,
   Zhipu,
+  Volcengine,
+  Cohere,
+  Claude,
+  Gemini,
+  Suno,
+  Minimax,
+  Wenxin,
+  Spark,
+  Qingyan,
+  DeepSeek,
+  Qwen,
+  Midjourney,
+  Grok,
+  AzureAI,
+  Hunyuan,
+  Xinference,
 } from '@lobehub/icons';
 
-const visualTabs = [
-  { label: '快速接入', icon: <IconCode /> },
-  { label: '实时报价', icon: <IconPriceTag /> },
-  { label: '用量大盘', icon: <IconHistogram /> },
-];
-
-const kpiItems = [
-  { value: '30+', label: '覆盖模型' },
-  { value: 'OpenAI', label: '兼容接口' },
-  { value: '按量', label: '灵活计费' },
-];
-
-const modelRows = [
-  { short: 'C', name: 'Claude Sonnet', price: '按量计费', color: '#111827' },
-  { short: 'O', name: 'GPT 系列', price: '统一接入', color: '#10a37f' },
-  { short: 'G', name: 'Gemini 2.5', price: '稳定转发', color: '#1a73e8' },
-  { short: 'D', name: 'DeepSeek', price: '高性价比', color: '#252525' },
-  { short: 'Q', name: 'Qwen 通义', price: '多模型支持', color: '#615ced' },
-  { short: 'K', name: 'Kimi / 豆包', price: '持续扩展', color: '#ee4c4c' },
-];
-
-const providerIcons = [
-  Moonshot,
-  OpenAI,
-  XAI,
-  Zhipu.Color,
-  Volcengine.Color,
-  Cohere.Color,
-  Claude.Color,
-  Gemini.Color,
-  Minimax.Color,
-  Wenxin.Color,
-  Spark.Color,
-  DeepSeek.Color,
-  Qwen.Color,
-  Midjourney,
-  Grok,
-  AzureAI.Color,
-  Hunyuan.Color,
-  Xinference.Color,
-];
-
-const chartBars = [42, 55, 48, 68, 60, 78, 65, 82, 90, 75, 88, 95];
+const { Text } = Typography;
 
 const Home = () => {
   const { t, i18n } = useTranslation();
@@ -108,16 +72,13 @@ const Home = () => {
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
   const [noticeVisible, setNoticeVisible] = useState(false);
-  const [visualIndex, setVisualIndex] = useState(0);
-  const [endpointIndex, setEndpointIndex] = useState(0);
   const isMobile = useIsMobile();
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
   const docsLink = statusState?.status?.docs_link || '';
   const serverAddress =
     statusState?.status?.server_address || `${window.location.origin}`;
-  const endpointItems = useMemo(() => API_ENDPOINTS.slice(0, 4), []);
-  const currentEndpoint = endpointItems[endpointIndex] || '/v1/chat/completions';
-  const displayedBaseUrl = `${serverAddress}${currentEndpoint}`;
+  const endpointItems = API_ENDPOINTS.map((e) => ({ value: e }));
+  const [endpointIndex, setEndpointIndex] = useState(0);
   const isChinese = i18n.language.startsWith('zh');
 
   const displayHomePageContent = async () => {
@@ -132,6 +93,7 @@ const Home = () => {
       setHomePageContent(content);
       localStorage.setItem('home_page_content', content);
 
+      // 如果内容是 URL，则发送主题模式
       if (data.startsWith('https://')) {
         const iframe = document.querySelector('iframe');
         if (iframe) {
@@ -149,7 +111,7 @@ const Home = () => {
   };
 
   const handleCopyBaseURL = async () => {
-    const ok = await copy(displayedBaseUrl);
+    const ok = await copy(serverAddress);
     if (ok) {
       showSuccess(t('已复制到剪切板'));
     }
@@ -186,13 +148,6 @@ const Home = () => {
     return () => clearInterval(timer);
   }, [endpointItems.length]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setVisualIndex((prev) => (prev + 1) % visualTabs.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
   return (
     <div className='w-full overflow-x-hidden'>
       <NoticeModal
@@ -201,85 +156,69 @@ const Home = () => {
         isMobile={isMobile}
       />
       {homePageContentLoaded && homePageContent === '' ? (
-        <main className='jr-home'>
-          <section className='jr-hero'>
-            <div className='jr-hero-top'>
-              <div className='jr-pitch'>
-                <div className='jr-eyebrow'>
-                  <span className='jr-eyebrow-mark'>AI</span>
-                  聚合 30+ 主流模型
-                </div>
-
-                <h1
-                  className={`jr-title ${isChinese ? 'jr-title-cn' : ''}`}
-                >
-                  一个接口
-                  <br />
-                  用上<span>所有大模型</span>
-                </h1>
-
-                <p className='jr-desc'>
-                  把 base_url 换成当前服务地址，原本写给 OpenAI
-                  的代码即可接入 Claude、Gemini、DeepSeek、通义、豆包等模型。
-                </p>
-
-                <div className='jr-endpoint'>
-                  <code title={displayedBaseUrl}>{serverAddress}</code>
-                  <span>{currentEndpoint}</span>
-                  <button
-                    type='button'
-                    className='jr-copy'
-                    onClick={handleCopyBaseURL}
-                    aria-label='复制接口地址'
+        <div className='w-full overflow-x-hidden'>
+          {/* Banner 部分 */}
+          <div className='w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden'>
+            {/* 背景模糊晕染球 */}
+            <div className='blur-ball blur-ball-indigo' />
+            <div className='blur-ball blur-ball-teal' />
+            <div className='flex items-center justify-center h-full px-4 py-20 md:py-24 lg:py-32 mt-10'>
+              {/* 居中内容区 */}
+              <div className='flex flex-col items-center justify-center text-center max-w-4xl mx-auto'>
+                <div className='flex flex-col items-center justify-center mb-6 md:mb-8'>
+                  <h1
+                    className={`text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-semi-color-text-0 leading-tight ${isChinese ? 'tracking-wide md:tracking-wider' : ''}`}
                   >
-                    <svg
-                      aria-hidden='true'
-                      className='jr-copy-icon'
-                      viewBox='0 0 24 24'
-                      fill='none'
-                      xmlns='http://www.w3.org/2000/svg'
-                    >
-                      <rect
-                        x='8'
-                        y='8'
-                        width='11'
-                        height='11'
-                        rx='3'
-                        stroke='currentColor'
-                        strokeWidth='2'
-                      />
-                      <path
-                        d='M6 16H5C3.9 16 3 15.1 3 14V5C3 3.9 3.9 3 5 3H14C15.1 3 16 3.9 16 5V6'
-                        stroke='currentColor'
-                        strokeWidth='2'
-                        strokeLinecap='round'
-                      />
-                    </svg>
-                  </button>
+                    <>
+                      {t('统一的')}
+                      <br />
+                      <span className='shine-text'>{t('大模型接口网关')}</span>
+                    </>
+                  </h1>
+                  <p className='text-base md:text-lg lg:text-xl text-semi-color-text-1 mt-4 md:mt-6 max-w-xl'>
+                    {t('更好的价格，更好的稳定性，只需要将模型基址替换为：')}
+                  </p>
+                  {/* BASE URL 与端点选择 */}
+                  <div className='flex flex-col md:flex-row items-center justify-center gap-4 w-full mt-4 md:mt-6 max-w-md'>
+                    <Input
+                      readonly
+                      value={serverAddress}
+                      className='flex-1 !rounded-full'
+                      size={isMobile ? 'default' : 'large'}
+                      suffix={
+                        <div className='flex items-center gap-2'>
+                          <ScrollList
+                            bodyHeight={32}
+                            style={{ border: 'unset', boxShadow: 'unset' }}
+                          >
+                            <ScrollItem
+                              mode='wheel'
+                              cycled={true}
+                              list={endpointItems}
+                              selectedIndex={endpointIndex}
+                              onSelect={({ index }) => setEndpointIndex(index)}
+                            />
+                          </ScrollList>
+                          <Button
+                            type='primary'
+                            onClick={handleCopyBaseURL}
+                            icon={<IconCopy />}
+                            className='!rounded-full'
+                          />
+                        </div>
+                      }
+                    />
+                  </div>
                 </div>
 
-                <div className='jr-endpoint-tabs'>
-                  {endpointItems.map((endpoint, index) => (
-                    <button
-                      key={endpoint}
-                      type='button'
-                      className={`jr-endpoint-tab ${
-                        index === endpointIndex ? 'active' : ''
-                      }`}
-                      onClick={() => setEndpointIndex(index)}
-                    >
-                      {endpoint.replace('/v1/', '')}
-                    </button>
-                  ))}
-                </div>
-
-                <div className='jr-actions'>
+                {/* 操作按钮 */}
+                <div className='flex flex-row gap-4 justify-center items-center'>
                   <Link to='/console'>
                     <Button
                       theme='solid'
                       type='primary'
                       size={isMobile ? 'default' : 'large'}
-                      className='jr-semi-primary'
+                      className='!rounded-3xl px-8 py-2'
                       icon={<IconPlay />}
                     >
                       {t('获取密钥')}
@@ -288,7 +227,7 @@ const Home = () => {
                   {isDemoSiteMode && statusState?.status?.version ? (
                     <Button
                       size={isMobile ? 'default' : 'large'}
-                      className='jr-semi-secondary'
+                      className='flex items-center !rounded-3xl px-6 py-2'
                       icon={<IconGithubLogo />}
                       onClick={() =>
                         window.open(
@@ -303,7 +242,7 @@ const Home = () => {
                     docsLink && (
                       <Button
                         size={isMobile ? 'default' : 'large'}
-                        className='jr-semi-secondary'
+                        className='flex items-center !rounded-3xl px-6 py-2'
                         icon={<IconFile />}
                         onClick={() => window.open(docsLink, '_blank')}
                       >
@@ -313,157 +252,88 @@ const Home = () => {
                   )}
                 </div>
 
-                <div className='jr-kpis'>
-                  {kpiItems.map((item) => (
-                    <div className='jr-kpi' key={item.label}>
-                      <strong>{item.value}</strong>
-                      <span>{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className='jr-visual-wrap'>
-                <div className='jr-vis-tabs' role='tablist'>
-                  {visualTabs.map((tab, index) => (
-                    <button
-                      key={tab.label}
-                      type='button'
-                      className={`jr-vis-tab ${
-                        index === visualIndex ? 'active' : ''
-                      }`}
-                      onClick={() => setVisualIndex(index)}
+                {/* 框架兼容性图标 */}
+                <div className='mt-12 md:mt-16 lg:mt-20 w-full'>
+                  <div className='flex items-center mb-6 md:mb-8 justify-center'>
+                    <Text
+                      type='tertiary'
+                      className='text-lg md:text-xl lg:text-2xl font-light'
                     >
-                      {tab.icon}
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className='jr-visual'>
-                  <div
-                    className={`jr-vis ${visualIndex === 0 ? 'active' : ''}`}
-                  >
-                    <div className='jr-code-card'>
-                      <div className='jr-code-bar'>
-                        <i />
-                        <i />
-                        <i />
-                        <span>app.py</span>
-                      </div>
-                      <pre>
-                        <span className='jr-comment'>
-                          # 一行替换，无需改业务代码
-                        </span>
-                        {'\n'}
-                        <span className='jr-white'>client</span> ={' '}
-                        <span className='jr-fn'>OpenAI</span>({'\n'}
-                        {'  '}
-                        <span className='jr-key'>base_url</span>=
-                        <span className='jr-string'>
-                          &quot;{serverAddress}/v1&quot;
-                        </span>
-                        ,{'\n'}
-                        {'  '}
-                        <span className='jr-key'>api_key</span>=
-                        <span className='jr-string'>
-                          &quot;jr-sk-***&quot;
-                        </span>
-                        {'\n'}
-                        ){'\n\n'}
-                        <span className='jr-white'>resp</span> ={' '}
-                        <span className='jr-white'>client</span>
-                        .chat.completions.
-                        <span className='jr-fn'>create</span>({'\n'}
-                        {'  '}
-                        <span className='jr-key'>model</span>=
-                        <span className='jr-string'>
-                          &quot;claude-sonnet&quot;
-                        </span>
-                        ,{'\n'}
-                        {'  '}
-                        <span className='jr-key'>messages</span>=[...]{'\n'}
-                        )
-                      </pre>
-                    </div>
+                      {t('支持众多的大模型供应商')}
+                    </Text>
                   </div>
-
-                  <div
-                    className={`jr-vis ${visualIndex === 1 ? 'active' : ''}`}
-                  >
-                    <div className='jr-model-card'>
-                      <h5>
-                        热门模型接入
-                        <em>multi-provider</em>
-                      </h5>
-                      {modelRows.map((model) => (
-                        <div className='jr-model-row' key={model.name}>
-                          <div
-                            className='jr-model-logo'
-                            style={{ background: model.color }}
-                          >
-                            {model.short}
-                          </div>
-                          <div className='jr-model-name'>{model.name}</div>
-                          <div className='jr-model-price'>{model.price}</div>
-                        </div>
-                      ))}
+                  <div className='flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto px-4'>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Moonshot size={40} />
                     </div>
-                  </div>
-
-                  <div
-                    className={`jr-vis ${visualIndex === 2 ? 'active' : ''}`}
-                  >
-                    <div className='jr-dash'>
-                      <div className='jr-dash-head'>
-                        <div>
-                          <h5>用量与稳定性</h5>
-                          <strong>可视化管理</strong>
-                        </div>
-                        <span>实时</span>
-                      </div>
-                      <div className='jr-dash-chart'>
-                        {chartBars.map((height, index) => (
-                          <i
-                            key={`${height}-${index}`}
-                            style={{ height: `${height}%` }}
-                          />
-                        ))}
-                      </div>
-                      <div className='jr-dash-foot'>
-                        <span>请求统计</span>
-                        <span>模型分布</span>
-                      </div>
-                      <div className='jr-dash-stats'>
-                        <div>
-                          <span>成功率</span>
-                          <strong>稳定转发</strong>
-                        </div>
-                        <div>
-                          <span>账单</span>
-                          <strong>清晰可查</strong>
-                        </div>
-                      </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <OpenAI size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <XAI size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Zhipu.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Volcengine.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Cohere.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Claude.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Gemini.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Suno size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Minimax.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Wenxin.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Spark.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Qingyan.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <DeepSeek.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Qwen.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Midjourney size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Grok size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <AzureAI.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Hunyuan.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Xinference.Color size={40} />
+                    </div>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
+                      <Typography.Text className='!text-lg sm:!text-xl md:!text-2xl lg:!text-3xl font-bold'>
+                        30+
+                      </Typography.Text>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <div className='jr-provider-section'>
-              <div className='jr-provider-label'>支持众多的大模型供应商</div>
-              <div className='jr-provider-strip'>
-                {providerIcons.map((ProviderIcon, index) => (
-                  <div className='jr-provider' key={index}>
-                    <ProviderIcon size={34} />
-                  </div>
-                ))}
-                <div className='jr-provider-more'>30+</div>
-              </div>
-            </div>
-          </section>
-
-        </main>
+          </div>
+        </div>
       ) : (
         <div className='overflow-x-hidden w-full'>
           {homePageContent.startsWith('https://') ? (
