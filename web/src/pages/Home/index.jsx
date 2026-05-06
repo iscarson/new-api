@@ -118,7 +118,7 @@ const Home = () => {
   const endpointItems = useMemo(() => API_ENDPOINTS.slice(0, 4), []);
   const currentEndpoint = endpointItems[endpointIndex] || '/v1/chat/completions';
   const displayedBaseUrl = `${serverAddress}${currentEndpoint}`;
-  const isChinese = i18n.language.startsWith('zh');
+  const isChinese = (i18n.language || '').startsWith('zh');
 
   const displayHomePageContent = async () => {
     setHomePageContent(localStorage.getItem('home_page_content') || '');
