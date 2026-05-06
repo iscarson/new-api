@@ -30,8 +30,8 @@ FROM debian:bookworm-slim@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0
 RUN set -eux; \
     if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
         sed -i \
-            -e 's|http://deb.debian.org/debian-security|https://mirrors.cloud.tencent.com/debian-security|g' \
-            -e 's|http://deb.debian.org/debian|https://mirrors.cloud.tencent.com/debian|g' \
+            -e 's|http://deb.debian.org/debian-security|http://mirrors.cloud.tencent.com/debian-security|g' \
+            -e 's|http://deb.debian.org/debian|http://mirrors.cloud.tencent.com/debian|g' \
             /etc/apt/sources.list.d/debian.sources; \
     fi; \
     apt-get update \
